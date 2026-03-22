@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "BugCapture",
+  "version": "1.10.3",
+  "incognito": "spanning",
+  "description": "Постоянно пишет кольцевой буфер последних N секунд видео вкладки. Клик на иконку — открывает модальное окно с предпросмотром, обрезкой и сохранением.",
+  "permissions": [
+    "tabCapture",
+    "storage",
+    "downloads",
+    "activeTab",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "BugCapture — записать момент"
+  },
+  "options_ui": {
+    "page": "settings/settings.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net; worker-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: data:;"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["modal/modal.html", "modal/modal.css", "modal/modal.js", "icons/icon.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

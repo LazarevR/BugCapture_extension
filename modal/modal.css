@@ -1,0 +1,544 @@
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary:            #111111;
+  --bg-secondary:          #191919;
+  --bg-tertiary:           #0a0a0a;
+  --bg-surface:            #1e1e1e;
+  --accent:                #bf0000;
+  --accent-hover:          #a30000;
+  --accent-save:           #bf0000;
+  --accent-save-hover:     #a30000;
+  --accent-danger:         #bf0000;
+  --text-primary:          #f0f0f0;
+  --text-secondary:        #9e9e9e;
+  --text-muted:            #555555;
+  --border:                rgba(255,255,255,0.07);
+  --slider-thumb:          #bf0000;
+  --slider-track:          #2a2a2a;
+  --timeline-range:        rgba(191, 0, 0, 0.28);
+  --timeline-range-border: rgba(191, 0, 0, 0.65);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --transition: 0.15s ease;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+#modal-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────────── */
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.modal-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+  line-height: 1;
+}
+
+.btn-icon:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+}
+
+.btn-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── Video wrapper ─────────────────────────────────────────────────────────── */
+
+.video-wrapper {
+  position: relative;
+  flex: 1 1 auto;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#preview-video {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+.video-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* ─── Loading Spinner ────────────────────────────────────────────────────────── */
+
+.spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.spinner-ring {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(191, 0, 0, 0.18);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ─── Conversion Progress ───────────────────────────────────────────────────── */
+
+#conversion-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 320px;
+  padding: 24px 28px;
+  background: rgba(5, 5, 5, 0.92);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  border: 1px solid rgba(191, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.progress-label {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: center;
+}
+
+.progress-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 5px;
+  transition: width 0.25s ease;
+}
+
+.progress-percent {
+  font-size: 15px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ─── Timeline section ──────────────────────────────────────────────────────── */
+
+.timeline-section {
+  padding: 12px 20px 8px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+#time-current {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.time-sep {
+  color: var(--text-muted);
+}
+
+/* ─── Trim sliders ──────────────────────────────────────────────────────────── */
+
+.trim-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 68px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trim-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  min-width: 38px;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Стили ползунков */
+.trim-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 0%), var(--slider-track) var(--val, 0%));
+  outline: none;
+  cursor: pointer;
+  transition: height var(--transition);
+}
+
+.trim-slider:hover {
+  height: 6px;
+}
+
+.trim-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-thumb);
+  cursor: grab;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(191, 0, 0, 0.22);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.trim-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 5px rgba(191, 0, 0, 0.3);
+}
+
+.trim-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-thumb);
+  cursor: grab;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(191, 0, 0, 0.22);
+}
+
+.trim-slider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* ─── Timeline bar ──────────────────────────────────────────────────────────── */
+
+.timeline-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.timeline-range {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--timeline-range);
+  border-left: 2px solid var(--timeline-range-border);
+  border-right: 2px solid var(--timeline-range-border);
+  pointer-events: none;
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #fff;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(255,255,255,0.4);
+  left: 0%;
+}
+
+/* ─── Controls section ──────────────────────────────────────────────────────── */
+
+.controls-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+
+.btn-control {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  line-height: 1;
+}
+
+.btn-control:hover {
+  background: #262626;
+  border-color: rgba(255,255,255,0.12);
+}
+
+.btn-control:active {
+  transform: scale(0.95);
+}
+
+.btn-control.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  padding: 10px;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+}
+
+.btn-control.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.btn-secondary:hover {
+  background: #1e1e1e;
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.14);
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-save {
+  background: var(--accent-save);
+  border: 1px solid var(--accent-save);
+  color: white;
+  cursor: pointer;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--transition), transform var(--transition), opacity var(--transition);
+}
+
+.btn-save:hover {
+  background: var(--accent-save-hover);
+  border-color: var(--accent-save-hover);
+}
+
+.btn-save:active {
+  transform: scale(0.97);
+}
+
+.btn-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-save:focus-visible {
+  outline: 2px solid var(--accent-save);
+  outline-offset: 2px;
+}
+
+.format-badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+/* ─── Selection info ─────────────────────────────────────────────────────────── */
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px 8px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#modal-root {
+  animation: fadeIn 0.2s ease;
+}
