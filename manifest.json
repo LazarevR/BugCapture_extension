@@ -16,7 +16,8 @@
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
@@ -45,6 +46,12 @@
   },
   "content_security_policy": {
     "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net; worker-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: data:;"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "bugcapture@bugcapture-extension",
+      "strict_min_version": "121.0"
+    }
   },
   "web_accessible_resources": [
     {
