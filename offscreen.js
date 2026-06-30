@@ -325,14 +325,22 @@ function getBlobAsync() {
 
 function cleanup() {
   clearTimeout(sessionTimer);
-  sessionTimer  = null;
+  sessionTimer = null;
+
+  const doReject = pendingReject;
   pendingResolve = null;
   pendingReject  = null;
+  doReject?.(new Error('Запись прервана'));
 
   if (recorder && recorder.state !== 'inactive') {
     try { recorder.stop(); } catch {}
   }
   if (stream) {
+    // Снимаем onended ДО остановки треков: track.stop() стреляет 'ended' синхронно,
+    // а activeTabId ещё не обнулён — без этого cleanup при явной остановке отправил бы
+    // OFFSCREEN_RECORDING_ENDED с реальным tabId, и background перезапустил бы запись.
+    const vt = stream.getVideoTracks()[0];
+    if (vt) vt.onended = null;
     stream.getTracks().forEach(t => t.stop());
     stream = null;
   }

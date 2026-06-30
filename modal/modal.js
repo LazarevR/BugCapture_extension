@@ -512,6 +512,7 @@ async function trimVideoBlob(blob, startSec, endSec) {
     let recorder = null;
     const chunks = [];
     let captureStarted = false;
+    let fallbackTimer = null;
 
     function beginCapture() {
       if (captureStarted) return;
@@ -546,13 +547,14 @@ async function trimVideoBlob(blob, startSec, endSec) {
       if (isFinite(endSec)) {
         const timeoutMs = Math.max(500, (endSec - tempVideo.currentTime) * 1000 + 1000);
         const timer = setTimeout(stop, timeoutMs);
+        let stopped = false;
         tempVideo.addEventListener('timeupdate', () => {
-          if (tempVideo.currentTime >= endSec - 0.05) { clearTimeout(timer); stop(); }
+          if (!stopped && tempVideo.currentTime >= endSec - 0.05) { stopped = true; clearTimeout(timer); stop(); }
         });
         tempVideo.addEventListener('ended', () => { clearTimeout(timer); stop(); }, { once: true });
       } else {
         tempVideo.addEventListener('ended', stop, { once: true });
-        setTimeout(stop, 300_000); // страховка 5 минут
+        fallbackTimer = setTimeout(stop, 300_000); // страховка 5 минут
       }
     }
 
@@ -562,6 +564,7 @@ async function trimVideoBlob(blob, startSec, endSec) {
     }
 
     function finish(result, error) {
+      clearTimeout(fallbackTimer);
       if (stream) stream.getTracks().forEach(t => t.stop());
       URL.revokeObjectURL(url);
       tempVideo.remove();

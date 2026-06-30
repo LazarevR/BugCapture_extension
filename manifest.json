@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BugCapture",
-  "version": "1.10.3",
+  "version": "1.10.5",
   "incognito": "spanning",
   "description": "Постоянно пишет кольцевой буфер последних N секунд видео вкладки. Клик на иконку — открывает модальное окно с предпросмотром, обрезкой и сохранением.",
   "permissions": [
@@ -10,14 +10,14 @@
     "downloads",
     "activeTab",
     "scripting",
-    "offscreen"
+    "offscreen",
+    "contextMenus"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
