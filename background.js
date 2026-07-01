@@ -25,11 +25,6 @@ const DEFAULT_SETTINGS = {
 const RESTRICTED_URL = /^(chrome|chrome-extension|devtools|edge|brave|about|data|javascript|blob):/;
 const OFFSCREEN_URL  = chrome.runtime.getURL('offscreen.html');
 
-// Флаг явной остановки пользователем через контекстное меню.
-// Пока true — все автоматические запуски (onActivated, onTabUpdated, OFFSCREEN_RECORDING_ENDED)
-// пропускаются. Сбрасывается когда пользователь сам кликает иконку.
-let userStoppedRecording = false;
-
 // Состояние конвертации MP4 (in-memory, выживает при перезагрузке вкладки).
 // offscreen document выполняет ffmpeg, progress идёт через здесь → content script.
 const convState = {
@@ -54,24 +49,18 @@ chrome.runtime.onStartup.addListener(onStartup);
 chrome.action.onClicked.addListener(onActionClicked);
 chrome.runtime.onMessage.addListener(onMessage);
 chrome.tabs.onRemoved.addListener(onTabRemoved);
-chrome.tabs.onUpdated.addListener(onTabUpdatedAutoStart);
+chrome.tabs.onUpdated.addListener(onTabUpdatedBadgeRestore);
 
 chrome.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === 'bc-toggle') {
     getOffscreenStatus().then(status => {
       if (status?.isCapturing) {
-        userStoppedRecording = true;
+        clearRecordingTabId();
         sendToOffscreen({ type: 'OFFSCREEN_STOP' });
         updateBadge(status.tabId, false);
       }
     }).catch(() => {});
   }
-});
-
-chrome.tabs.onActivated.addListener(({ tabId }) => {
-  chrome.tabs.get(tabId)
-    .then(tab => { if (isCapturableTab(tab)) startCapture(tabId, true); })
-    .catch(() => {});
 });
 
 function onInstalled(details) {
@@ -80,20 +69,11 @@ function onInstalled(details) {
   }
   ensureOffscreen().catch(() => {});
   createContextMenu();
-  tryStartCaptureOnActiveTab();
 }
 
 function onStartup() {
   ensureOffscreen().catch(() => {});
   createContextMenu();
-  tryStartCaptureOnActiveTab();
-}
-
-async function tryStartCaptureOnActiveTab() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && isCapturableTab(tab)) startCapture(tab.id, true);
-  } catch {}
 }
 
 // ─── Проверка вкладки ─────────────────────────────────────────────────────────
@@ -146,7 +126,6 @@ async function getOffscreenStatus() {
 // После await контекст пользовательского жеста может быть потерян.
 
 function onActionClicked(tab) {
-  userStoppedRecording = false; // пользователь взаимодействует — разрешаем авто-старт снова
   if (!tab?.id) return;
   const tabId = tab.id;
 
@@ -193,6 +172,7 @@ function onActionClicked(tab) {
     const resp = await sendToOffscreen({ type: 'OFFSCREEN_START', streamId: freshStreamId, settings, tabId });
 
     if (resp?.ok) {
+      setRecordingTabId(tabId);
       updateBadge(tabId, true);
     } else {
       await notifyTab(tabId, {
@@ -214,7 +194,6 @@ function onActionClicked(tab) {
 // silent = true → не показывать ошибки пользователю (авто-старт)
 
 function startCapture(tabId, silent = false, retries = 5) {
-  if (silent && userStoppedRecording) return; // пользователь явно остановил — не перезапускаем
   // Вызываем getMediaStreamId СРАЗУ — до любых await
   chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }, async (streamId) => {
     const errMsg = chrome.runtime.lastError?.message;
@@ -248,10 +227,11 @@ function startCapture(tabId, silent = false, retries = 5) {
           try {
             const tab = await chrome.tabs.get(tabId);
             if (tab?.active && isCapturableTab(tab)) startCapture(tabId, true, retries - 1);
-            else updateBadge(tabId, false);
-          } catch { updateBadge(tabId, false); }
+            else { clearRecordingTabId(); updateBadge(tabId, false); }
+          } catch { clearRecordingTabId(); updateBadge(tabId, false); }
         }, 2000);
       } else {
+        clearRecordingTabId();
         updateBadge(tabId, false);
       }
       return;
@@ -287,6 +267,7 @@ function startCapture(tabId, silent = false, retries = 5) {
     });
 
     if (resp?.ok) {
+      setRecordingTabId(tabId);
       updateBadge(tabId, true);
     } else {
       const startErr = resp?.error || 'getUserMedia failed';
@@ -303,10 +284,11 @@ function startCapture(tabId, silent = false, retries = 5) {
           try {
             const tab = await chrome.tabs.get(tabId);
             if (tab?.active && isCapturableTab(tab)) startCapture(tabId, true, retries - 1);
-            else updateBadge(tabId, false);
-          } catch { updateBadge(tabId, false); }
+            else { clearRecordingTabId(); updateBadge(tabId, false); }
+          } catch { clearRecordingTabId(); updateBadge(tabId, false); }
         }, 2000);
       } else {
+        clearRecordingTabId();
         updateBadge(tabId, false);
       }
     }
@@ -338,6 +320,7 @@ async function triggerSaveModal(tabId) {
   }
 
   // Запись успешно остановлена — снимаем бейдж
+  clearRecordingTabId();
   updateBadge(tabId, false);
 
   // base64Data уже готова (закодирована в offscreen до передачи через IPC)
@@ -361,16 +344,24 @@ async function triggerSaveModal(tabId) {
 
 function onTabRemoved(tabId) {
   updateBadge(tabId, false);
+  getRecordingTabId().then(recTabId => {
+    if (recTabId === tabId) clearRecordingTabId();
+  }).catch(() => {});
   getOffscreenStatus().then(status => {
     if (status?.tabId === tabId) sendToOffscreen({ type: 'OFFSCREEN_STOP' });
   }).catch(() => {});
 }
 
-function onTabUpdatedAutoStart(tabId, changeInfo, tab) {
+// Восстанавливаем бейдж если Chrome сбросил его при навигации, а поток выжил.
+// НЕ запускает запись — только восстанавливает визуальное состояние.
+function onTabUpdatedBadgeRestore(tabId, changeInfo) {
   if (changeInfo.status !== 'complete') return;
-  if (!tab?.active) return;
-  if (!isCapturableTab(tab)) return;
-  startCapture(tabId, true);
+  getRecordingTabId().then(recTabId => {
+    if (recTabId !== tabId) return;
+    getOffscreenStatus().then(status => {
+      if (status?.isCapturing && status?.tabId === tabId) updateBadge(tabId, true);
+    }).catch(() => {});
+  }).catch(() => {});
 }
 
 // ─── Сообщения ────────────────────────────────────────────────────────────────
@@ -424,7 +415,7 @@ function onMessage(message, sender, sendResponse) {
       break;
 
     case 'BUGCAPTURE_RECORDING_STOPPED':
-      if (tabId) updateBadge(tabId, false);
+      if (tabId) { clearRecordingTabId(); updateBadge(tabId, false); }
       break;
 
     case 'BUGCAPTURE_TRIGGER':
@@ -436,9 +427,14 @@ function onMessage(message, sender, sendResponse) {
     case 'OFFSCREEN_RECORDING_ENDED':
       if (message.tabId) {
         // Поток прервался (навигация/перезагрузка страницы).
-        // Бейдж намеренно НЕ сбрасываем — он остаётся красным пока идёт перезагрузка.
-        // startCapture сам уберёт бейдж если вкладка закрыта или все retries провалились.
-        startCapture(message.tabId, true);
+        // Переподключаемся только если пользователь сам запустил запись на этой вкладке.
+        getRecordingTabId().then(recTabId => {
+          if (recTabId === message.tabId) {
+            startCapture(message.tabId, true);
+          } else {
+            updateBadge(message.tabId, false);
+          }
+        }).catch(() => {});
       }
       break;
 
@@ -524,6 +520,27 @@ function onMessage(message, sender, sendResponse) {
   }
 
   return false;
+}
+
+// ─── Состояние записи (персистентное) ────────────────────────────────────────
+//
+// recordingTabId хранится в chrome.storage.local — переживает рестарты service worker.
+// Устанавливается когда пользователь явно запускает запись (клик по иконке или горячая клавиша).
+// Очищается когда запись остановлена любым способом.
+
+async function getRecordingTabId() {
+  try {
+    const r = await chrome.storage.local.get('recordingTabId');
+    return r.recordingTabId ?? null;
+  } catch { return null; }
+}
+
+function setRecordingTabId(tabId) {
+  chrome.storage.local.set({ recordingTabId: tabId }).catch(() => {});
+}
+
+function clearRecordingTabId() {
+  chrome.storage.local.remove('recordingTabId').catch(() => {});
 }
 
 // ─── Утилиты ─────────────────────────────────────────────────────────────────
