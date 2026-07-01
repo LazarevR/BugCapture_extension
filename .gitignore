@@ -37,3 +37,4 @@ yarn.lock
 dist/
 build/
 out/
+CHANGES.md
