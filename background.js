@@ -42,7 +42,6 @@ const convState = {
 // Когда onTabUpdated сработает, offscreen уже будет готов и getMediaStreamId
 // будет использован практически мгновенно — streamId не успеет протухнуть.
 ensureOffscreen().catch(() => {});
-createContextMenu();
 
 chrome.runtime.onInstalled.addListener(onInstalled);
 chrome.runtime.onStartup.addListener(onStartup);
@@ -590,13 +589,13 @@ function createContextMenu() {
       title: '○ Остановлено',
       contexts: ['action'],
       enabled: false,
-    });
+    }, () => void chrome.runtime.lastError);
     chrome.contextMenus.create({
       id: 'bc-toggle',
       title: 'Остановить запись',
       contexts: ['action'],
       enabled: false,
-    });
+    }, () => void chrome.runtime.lastError);
   });
 }
 
